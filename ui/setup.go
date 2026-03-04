@@ -20,7 +20,7 @@ const (
 	stepDone
 )
 
-var providers = []string{"groq", "openai", "deepseek", "gemini", "claude", "local"}
+var providers = []string{"groq", "openai", "deepseek", "gemini", "claude", "ollama", "openrouter", "local"}
 
 var tempUnits = []string{"celsius", "fahrenheit"}
 
@@ -53,17 +53,17 @@ type SetupModel struct {
 
 func NewSetupModel() SetupModel {
 	apiKeyInput := textinput.New()
-	apiKeyInput.Placeholder = "Paste your API key here"
+	apiKeyInput.Placeholder = "API anahtarınızı buraya yapıştırın"
 	apiKeyInput.EchoMode = textinput.EchoPassword
 	apiKeyInput.EchoCharacter = '*'
 	apiKeyInput.Focus()
 
 	cityInput := textinput.New()
-	cityInput.Placeholder = "e.g., Lisbon"
+	cityInput.Placeholder = "örn., İstanbul"
 	cityInput.Focus()
 
 	countryInput := textinput.New()
-	countryInput.Placeholder = "e.g., PT"
+	countryInput.Placeholder = "örn., TR"
 	countryInput.CharLimit = 2
 
 	sp := spinner.New()
@@ -106,7 +106,13 @@ func (m SetupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.KeyDown, tea.KeyTab:
 				m.selectedIdx = (m.selectedIdx + 1) % len(providers)
 			case tea.KeyEnter:
-				m.step = stepAPIKey
+				// Skip API key step for providers that don't require it
+				selectedProvider := providers[m.selectedIdx]
+				if selectedProvider == "ollama" || selectedProvider == "local" {
+					m.step = stepLocation
+				} else {
+					m.step = stepAPIKey
+				}
 				cmds = append(cmds, func() tea.Msg {
 					return tea.WindowSizeMsg{
 						Width:  m.width,
@@ -217,7 +223,7 @@ func (m SetupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m SetupModel) View() string {
 	if m.width == 0 {
-		return "Initializing setup..."
+		return "Kurulum başlatılıyor..."
 	}
 
 	stepIndicator := StyleStepIndicator.Render(fmt.Sprintf("[%d/5]", m.step+1))
@@ -243,7 +249,7 @@ func (m SetupModel) View() string {
 		content = m.renderDoneStep()
 	}
 
-	footer := StyleMuted.Render("↑↓ select  tab/enter confirm  esc quit")
+	footer := StyleMuted.Render("↑↓ seçim  tab/enter onay  esc çık")
 
 	centeredContent := lipgloss.Place(
 		m.width-4, m.height-6,
@@ -268,17 +274,25 @@ func (m SetupModel) renderProviderStep() string {
 
 	var items []string
 	for i, p := range providers {
+		label := p
+		// Add indicator for free/local providers
+		if p == "ollama" || p == "local" {
+			label = p + " (anahtar gerekmez)"
+		} else if p == "groq" || p == "openrouter" {
+			label = p + " (ücretsiz katman mevcut)"
+		}
+
 		if i == m.selectedIdx {
-			items = append(items, StyleSelectedItem.Render("> "+p))
+			items = append(items, StyleSelectedItem.Render("> "+label))
 		} else {
-			items = append(items, StyleMuted.Render("  "+p))
+			items = append(items, StyleMuted.Render("  "+label))
 		}
 	}
 
 	content := StyleAccent.Render(asciiTitle) + "\n\n"
-	content += StylePrompt.Render("Select your preferred LLM:") + "\n\n"
+	content += StylePrompt.Render("Tercih ettiğiniz LLM'yi seçin:") + "\n\n"
 	content += lipgloss.JoinVertical(lipgloss.Left, items...)
-	content += "\n\n" + StyleMuted.Render("Selected: "+StyleAccent.Render(selected))
+	content += "\n\n" + StyleMuted.Render("Seçilen: "+StyleAccent.Render(selected))
 
 	return content
 }
@@ -287,25 +301,34 @@ func (m SetupModel) renderAPIKeyStep() string {
 	selectedProvider := providers[m.selectedIdx]
 
 	content := StyleAccent.Render(asciiTitle) + "\n\n"
-	content += StylePrompt.Render("Selected: "+selectedProvider) + "\n\n"
-	content += "Enter your " + StyleAccent.Render(selectedProvider) + " API key:\n\n"
+	content += StylePrompt.Render("Seçilen: "+selectedProvider) + "\n\n"
+	content += selectedProvider + " API anahtarınızı girin:\n\n"
 	content += m.apiKeyInput.View() + "\n\n"
-	content += StyleHint.Render("Your API key is stored locally and never leaves your machine.")
+
+	// Provider-specific hints
+	hint := "API anahtarınız yerel olarak saklanır ve cihazınızdan asla çıkmaz."
+	if selectedProvider == "openrouter" {
+		hint = "OpenRouter ücretsiz modeller sağlar. Anahtarınızı openrouter.ai adresinden alın"
+	} else if selectedProvider == "groq" {
+		hint = "Groq ücretsiz katman sağlar. Anahtarınızı console.groq.com adresinden alın"
+	}
+
+	content += StyleHint.Render(hint)
 
 	return content
 }
 
 func (m SetupModel) renderLocationStep() string {
 	content := StyleAccent.Render(asciiTitle) + "\n\n"
-	content += StylePrompt.Render("Enter your location for weather and local news:") + "\n\n"
-	content += "  City:          " + m.cityInput.View() + "\n"
-	content += "  Country code: " + m.countryInput.View() + "\n\n"
+	content += StylePrompt.Render("Hava durumu ve yerel haberler için konumunuzu girin:") + "\n\n"
+	content += "  Şehir:          " + m.cityInput.View() + "\n"
+	content += "  Ülke kodu: " + m.countryInput.View() + "\n\n"
 
 	if m.err != "" {
-		content += StyleError.Render("Error: "+m.err) + "\n"
-		content += StyleHint.Render("Press Enter to go back and try again.")
+		content += StyleError.Render("Hata: "+m.err) + "\n"
+		content += StyleHint.Render("Geri dönüp tekrar denemek için Enter'a basın.")
 	} else {
-		content += StyleHint.Render("Example: Lisbon / PT, New York / US, London / GB")
+		content += StyleHint.Render("Örnek: Lisbon / PT, New York / US, London / GB")
 	}
 
 	return content
@@ -313,7 +336,7 @@ func (m SetupModel) renderLocationStep() string {
 
 func (m SetupModel) renderTempUnitStep() string {
 	content := StyleAccent.Render(asciiTitle) + "\n\n"
-	content += StylePrompt.Render("Select temperature unit:") + "\n\n"
+	content += StylePrompt.Render("Sıcaklık birimini seçin:") + "\n\n"
 
 	for i, unit := range tempUnits {
 		if i == m.tempUnitSelectedIdx {
@@ -323,7 +346,7 @@ func (m SetupModel) renderTempUnitStep() string {
 		}
 	}
 
-	content += "\n" + StyleHint.Render("Use ↑↓ or tab to select, Enter to continue")
+	content += "\n" + StyleHint.Render("Seçmek için ↑↓ veya tab kullanın, devam etmek için Enter")
 
 	return content
 }
@@ -332,14 +355,14 @@ func (m SetupModel) renderSavingStep() string {
 	var lines []string
 
 	if m.geocoding {
-		lines = append(lines, m.spinner.View()+" Looking up coordinates...")
+		lines = append(lines, m.spinner.View()+" Koordinatlar aranıyor...")
 	}
 	if m.saving {
-		lines = append(lines, m.spinner.View()+" Saving configuration...")
+		lines = append(lines, m.spinner.View()+" Yapılandırma kaydediliyor...")
 	}
 	if m.err != "" {
-		lines = append(lines, StyleError.Render("Error: "+m.err))
-		lines = append(lines, StyleHint.Render("Press Enter to go back and try again."))
+		lines = append(lines, StyleError.Render("Hata: "+m.err))
+		lines = append(lines, StyleHint.Render("Geri dönüp tekrar denemek için Enter'a basın."))
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Center, lines...)
@@ -349,10 +372,10 @@ func (m SetupModel) renderDoneStep() string {
 	provider := providers[m.selectedIdx]
 	location := m.cityInput.Value() + ", " + m.countryInput.Value()
 
-	msg := StyleSuccess.Render("Setup complete!") + "\n\n"
-	msg += "  Provider: " + StyleAccent.Render(provider) + "\n"
-	msg += "  Location: " + StyleAccent.Render(location) + "\n\n"
-	msg += StyleHint.Render("Press any key to launch Watchtower...")
+	msg := StyleSuccess.Render("Kurulum tamamlandı!") + "\n\n"
+	msg += "  Sağlayıcı: " + StyleAccent.Render(provider) + "\n"
+	msg += "  Konum: " + StyleAccent.Render(location) + "\n\n"
+	msg += StyleHint.Render("Watchtower'ı başlatmak için herhangi bir tuşa basın...")
 
 	return msg
 }
@@ -369,9 +392,16 @@ func (m SetupModel) doGeocode() tea.Cmd {
 
 func (m SetupModel) doSave(lat, lon float64) tea.Cmd {
 	return func() tea.Msg {
+		// No API key needed for ollama/local
+		apiKey := m.apiKeyInput.Value()
+		selectedProvider := providers[m.selectedIdx]
+		if selectedProvider == "ollama" || selectedProvider == "local" {
+			apiKey = ""
+		}
+
 		cfg := &config.Config{
-			LLMProvider: providers[m.selectedIdx],
-			LLMAPIKey:   m.apiKeyInput.Value(),
+			LLMProvider: selectedProvider,
+			LLMAPIKey:   apiKey,
 			Location: config.Location{
 				City:      m.cityInput.Value(),
 				Country:   m.countryInput.Value(),

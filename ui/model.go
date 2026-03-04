@@ -212,7 +212,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "B":
 			if m.cfg.LLMAPIKey != "" {
 				m.loading["brief"] = true
-				m.statusMsg = "Forcing fresh brief (ignoring cache)..."
+				m.statusMsg = "Yeni özet oluşturuluyor (önbellek atlaniyor)..."
 				m.statusExpiry = time.Now().Add(3 * time.Second)
 				cmds = append(cmds, fetchBrief(intel.LLMConfig{Provider: intel.Provider(m.cfg.LLMProvider), APIKey: m.cfg.LLMAPIKey, Model: m.cfg.LLMModel}, m.globalNews, m.cfg.BriefCacheMins, true))
 			}
@@ -224,7 +224,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "I":
 			if m.cfg.LLMAPIKey != "" && m.activeTab == TabLocal {
 				m.loading["localBrief"] = true
-				m.statusMsg = "Forcing fresh local brief (ignoring cache)..."
+				m.statusMsg = "Yeni yerel özet oluşturuluyor (önbellek atlaniyor)..."
 				m.statusExpiry = time.Now().Add(3 * time.Second)
 				cmds = append(cmds, fetchLocalBrief(intel.LLMConfig{Provider: intel.Provider(m.cfg.LLMProvider), APIKey: m.cfg.LLMAPIKey, Model: m.cfg.LLMModel}, m.cfg.Location.City, m.localNews, m.weatherCond, m.forecast, m.cfg.BriefCacheMins, true))
 			}
@@ -297,20 +297,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				item := m.globalNews[m.selectedNewsIdx]
 				if item.URL != "" {
 					cmds = append(cmds, openURL(item.URL))
-					m.statusMsg = "Opening: " + truncate(item.Title, 60)
+					m.statusMsg = "Açılıyor: " + truncate(item.Title, 60)
 					m.statusExpiry = time.Now().Add(3 * time.Second)
 				} else {
-					m.statusMsg = "No URL available for this article"
+					m.statusMsg = "Bu makale için URL mevcut değil"
 					m.statusExpiry = time.Now().Add(3 * time.Second)
 				}
 			} else if m.activeTab == TabLocal && m.selectedLocalNewsIdx < len(m.localNews) {
 				item := m.localNews[m.selectedLocalNewsIdx]
 				if item.URL != "" {
 					cmds = append(cmds, openURL(item.URL))
-					m.statusMsg = "Opening: " + truncate(item.Title, 60)
+					m.statusMsg = "Açılıyor: " + truncate(item.Title, 60)
 					m.statusExpiry = time.Now().Add(3 * time.Second)
 				} else {
-					m.statusMsg = "No URL available for this article"
+					m.statusMsg = "Bu makale için URL mevcut değil"
 					m.statusExpiry = time.Now().Add(3 * time.Second)
 				}
 			}
@@ -565,11 +565,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			delete(m.errors, "brief")
 			m.lastRefresh = time.Now()
 			if msg.fromCache {
-				m.statusMsg = "Brief loaded from cache (" + msg.brief.GeneratedAt.Format("Jan 02 15:04") + ")"
+				m.statusMsg = "Özet önbellekten yüklendi (" + msg.brief.GeneratedAt.Format("02 Jan 15:04") + ")"
 			} else {
 				// Persist fresh result to disk cache
 				go intel.SaveCachedBrief(msg.brief)
-				m.statusMsg = "Brief generated and cached"
+				m.statusMsg = "Özet oluşturuldu ve önbelleğe alındı"
 			}
 			m.statusExpiry = time.Now().Add(4 * time.Second)
 		}
@@ -590,10 +590,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			delete(m.errors, "localBrief")
 			m.lastRefresh = time.Now()
 			if msg.fromCache {
-				m.statusMsg = "Local brief loaded from cache (" + msg.brief.GeneratedAt.Format("Jan 02 15:04") + ")"
+				m.statusMsg = "Yerel özet önbellekten yüklendi (" + msg.brief.GeneratedAt.Format("02 Jan 15:04") + ")"
 			} else {
 				go intel.SaveCachedLocalBrief(msg.brief)
-				m.statusMsg = "Local brief generated and cached"
+				m.statusMsg = "Yerel özet oluşturuldu ve önbelleğe alındı"
 			}
 			m.statusExpiry = time.Now().Add(4 * time.Second)
 		}
@@ -620,7 +620,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	if m.width == 0 {
-		return "Initializing Watchtower..."
+		return "Watchtower başlatılıyor..."
 	}
 	return lipgloss.JoinVertical(lipgloss.Left,
 		m.renderHeader(),
@@ -634,14 +634,14 @@ func (m Model) renderHeader() string {
 	isLoading := len(m.loading) > 0
 	loadStr := ""
 	if isLoading {
-		loadStr = "  " + m.spinner.View() + " loading..."
+		loadStr = "  " + m.spinner.View() + " yükleniyor..."
 	}
 	refreshStr := ""
 	if !m.lastRefresh.IsZero() {
-		refreshStr = fmt.Sprintf("  updated %s", m.lastRefresh.Format("15:04:05"))
+		refreshStr = fmt.Sprintf("  güncellendi %s", m.lastRefresh.Format("15:04:05"))
 	}
 	title := StyleTitle.Render("🌍 WATCHTOWER")
-	right := StyleSubtitle.Render("real-time intelligence" + loadStr + refreshStr)
+	right := StyleSubtitle.Render("gerçek zamanlı istihbarat" + loadStr + refreshStr)
 	gap := m.width - lipgloss.Width(title) - lipgloss.Width(right) - 4
 	if gap < 1 {
 		gap = 1
@@ -652,7 +652,7 @@ func (m Model) renderHeader() string {
 }
 
 func (m Model) renderTabs() string {
-	names := []string{"1 Overview", "2 Global News", "3 Local"}
+	names := []string{"1 Genel Bakış", "2 Küresel Haberler", "3 Yerel"}
 	var parts []string
 	for i, name := range names {
 		if i == m.activeTab {
@@ -682,11 +682,11 @@ func (m Model) renderFooter() string {
 	var hint string
 	switch m.activeTab {
 	case TabNews:
-		hint = "  jk navigate  enter open in browser  d/u page  g/G top/bottom  tab switch  r refresh  b brief  q quit"
+		hint = "  jk gezin  enter tarayıcıda aç  d/u sayfa  g/G baş/son  tab değiştir  r yenile  b özet  q çık"
 	case TabLocal:
-		hint = "  jk navigate  enter open in browser  d/u page  g/G top/bottom  tab switch  r refresh  i local brief  q quit"
+		hint = "  jk gezin  enter tarayıcıda aç  d/u sayfa  g/G baş/son  tab değiştir  r yenile  i yerel özet  q çık"
 	default:
-		hint = "  ↑↓/jk scroll  tab/←→ switch  1 overview  2 news  3 local  r refresh  b brief  q quit"
+		hint = "  ↑↓/jk kaydır  tab/←→ değiştir  1 genel bakış  2 haberler  3 yerel  r yenile  b özet  q çık"
 	}
 	return StyleFooter.Width(m.width).Render(hint)
 }
@@ -723,10 +723,10 @@ func (m Model) renderOverviewContent() string {
 	qW := halfW - 3
 
 	// Render the four panels
-	topLeft := m.quadrantBox("🌤  WEATHER  "+m.cfg.Location.City, m.renderWeatherPanel(qW, topQH), halfW-1, topH)
-	topRight := m.quadrantBox("🧠  INTEL BRIEF", m.renderBriefPanel(qW, topQH), halfW-1, topH)
-	botLeft := m.quadrantBox("₿  MARKETS & PRICES", m.renderCryptoPanel(qW, botQH), halfW-1, botH)
-	botRight := m.quadrantBox("📊  PREDICTION MARKETS", m.renderPolyPanel(qW, botQH), halfW-1, botH)
+	topLeft := m.quadrantBox("🌤  HAVA DURUMU  "+m.cfg.Location.City, m.renderWeatherPanel(qW, topQH), halfW-1, topH)
+	topRight := m.quadrantBox("🧠  İSTİHBARAT ÖZETİ", m.renderBriefPanel(qW, topQH), halfW-1, topH)
+	botLeft := m.quadrantBox("₿  PİYASALAR VE FİYATLAR", m.renderCryptoPanel(qW, botQH), halfW-1, botH)
+	botRight := m.quadrantBox("📊  TAHMİN PİYASALARI", m.renderPolyPanel(qW, botQH), halfW-1, botH)
 
 	topRow := lipgloss.JoinHorizontal(lipgloss.Top, topLeft, " ", topRight)
 	botRow := lipgloss.JoinHorizontal(lipgloss.Top, botLeft, " ", botRight)
@@ -750,7 +750,7 @@ func (m Model) renderWeatherPanel(w, h int) string {
 		return StyleError.Render("⚠ " + errMsg)
 	}
 	if m.weatherCond == nil {
-		return m.spinner.View() + " fetching weather..."
+		return m.spinner.View() + " hava durumu fetch ediliyor..."
 	}
 
 	wc := m.weatherCond
@@ -758,7 +758,7 @@ func (m Model) renderWeatherPanel(w, h int) string {
 	sb.WriteString(fmt.Sprintf("%s  %s\n", wc.Icon,
 		StyleWeatherTemp.Render(m.formatTemp(wc.TempC))))
 	sb.WriteString(StyleWeatherDesc.Render(wc.Description) + "\n")
-	sb.WriteString(StyleAge.Render(fmt.Sprintf("Feels like %s", m.formatTemp(wc.FeelsLikeC))) + "\n\n")
+	sb.WriteString(StyleAge.Render(fmt.Sprintf("Hissedilen %s", m.formatTemp(wc.FeelsLikeC))) + "\n\n")
 	sb.WriteString(fmt.Sprintf("💧 %d%%   💨 %.0f km/h %s   ☀ UV %.0f\n",
 		wc.Humidity, wc.WindSpeedKmh,
 		weather.WindDirectionStr(wc.WindDirection), wc.UVIndex))
@@ -767,7 +767,7 @@ func (m Model) renderWeatherPanel(w, h int) string {
 	if len(m.forecast) > 0 {
 		sb.WriteString("\n")
 		sb.WriteString(StyleTableHeader.Render(
-			fmt.Sprintf("%-10s  %-4s %5s %5s %5s", "Day", "", "Hi", "Lo", "Rain")) + "\n")
+			fmt.Sprintf("%-10s  %-4s %5s %5s %5s", "Gün", "", "Max", "Min", "Yağış")) + "\n")
 		sb.WriteString(StyleDivider.Render(strings.Repeat("─", minInt(w, 36))) + "\n")
 		maxRows := h - 8
 		if maxRows < 1 {
@@ -779,7 +779,7 @@ func (m Model) renderWeatherPanel(w, h int) string {
 			}
 			dayLabel := f.Date.Format("Mon 02 Jan")
 			if i == 0 {
-				dayLabel = "Today     "
+				dayLabel = "Bugün     "
 			}
 			sb.WriteString(fmt.Sprintf("%-10s  %s  %4s %4s %3.0fmm\n",
 				dayLabel, f.Icon, m.formatTemp(f.MaxTempC), m.formatTemp(f.MinTempC), f.RainMM))
@@ -793,28 +793,28 @@ func (m Model) renderBriefPanel(w, h int) string {
 	var sb strings.Builder
 
 	if m.cfg.LLMAPIKey == "" {
-		sb.WriteString(StyleWarning.Render("⚠  No LLM_API_KEY set.\n\n"))
-		sb.WriteString(StyleMuted.Render("Add key to:\n~/.config/watchtower/config.yaml\n\nSet llm_provider and llm_api_key.\n\nPress [b] after adding key."))
+		sb.WriteString(StyleWarning.Render("⚠  LLM_API_KEY ayarlanmamış.\n\n"))
+		sb.WriteString(StyleMuted.Render("Anahtarı ekleyin:\n~/.config/watchtower/config.yaml\n\nllm_provider ve llm_api_key ayarlayın.\n\n[b] tuşuna bastıktan sonra."))
 		return sb.String()
 	}
 
 	if m.loading["brief"] {
-		sb.WriteString(m.spinner.View() + " Generating brief...\n\n")
-		sb.WriteString(StyleMuted.Render("Calling " + m.cfg.LLMProvider + "..."))
+		sb.WriteString(m.spinner.View() + " Özet oluşturuluyor...\n\n")
+		sb.WriteString(StyleMuted.Render(m.cfg.LLMProvider + " çağrılıyor..."))
 		return sb.String()
 	}
 
 	if errMsg, ok := m.errors["brief"]; ok {
 		sb.WriteString(StyleError.Render("⚠ "+errMsg) + "\n\n")
-		sb.WriteString(StyleMuted.Render("Press [b] to retry."))
+		sb.WriteString(StyleMuted.Render("Tekrar denemek için [b] tuşuna basın."))
 		return sb.String()
 	}
 
 	if m.brief == nil {
 		if len(m.globalNews) == 0 {
-			sb.WriteString(StyleMuted.Render("Waiting for news to load..."))
+			sb.WriteString(StyleMuted.Render("Haberler yükleniyor..."))
 		} else {
-			sb.WriteString(StyleMuted.Render("Press [b] to generate AI brief."))
+			sb.WriteString(StyleMuted.Render("AI özeti oluşturmak için [b] tuşuna basın."))
 		}
 		return sb.String()
 	}
@@ -824,9 +824,9 @@ func (m Model) renderBriefPanel(w, h int) string {
 	if time.Since(b.GeneratedAt) > time.Minute {
 		mins := int(time.Since(b.GeneratedAt).Minutes())
 		if mins >= 60 {
-			cacheAge = fmt.Sprintf("  cached %dh%dm ago", mins/60, mins%60)
+			cacheAge = fmt.Sprintf("  önbellek %dh%dm önce", mins/60, mins%60)
 		} else {
-			cacheAge = fmt.Sprintf("  cached %dm ago", mins)
+			cacheAge = fmt.Sprintf("  önbellek %dm önce", mins)
 		}
 	}
 	sb.WriteString(StyleBriefMeta.Render(b.GeneratedAt.Format("15:04")+"  "+b.Model+cacheAge) + "\n\n")
@@ -863,7 +863,7 @@ func (m Model) renderCryptoPanel(w, h int) string {
 	if errMsg, ok := m.errors["crypto"]; ok {
 		sb.WriteString(StyleError.Render("⚠ crypto: "+errMsg) + "\n")
 	} else if len(m.cryptoPrices) == 0 {
-		sb.WriteString(m.spinner.View() + " fetching crypto...\n")
+		sb.WriteString(m.spinner.View() + " crypto fetch ediliyor...\n")
 	} else {
 		symW := 5
 		priceW := 11
@@ -873,7 +873,7 @@ func (m Model) renderCryptoPanel(w, h int) string {
 			nameW = 4
 		}
 		hdr := fmt.Sprintf("%-*s %-*s %*s %*s",
-			symW, "SYM", nameW, "NAME", priceW, "PRICE", changeW, "24H%")
+			symW, "SEM", nameW, "İSİM", priceW, "FİYAT", changeW, "24S%")
 		sb.WriteString(StyleTableHeader.Render(hdr) + "\n")
 		sb.WriteString(StyleDivider.Render(strings.Repeat("─", minInt(w-1, 55))) + "\n")
 		for _, p := range m.cryptoPrices {
@@ -899,11 +899,11 @@ func (m Model) renderCryptoPanel(w, h int) string {
 	sb.WriteString("\n")
 
 	// ── Stock Indices ─────────────────────────────────────────────────────────
-	sb.WriteString(StyleSubSectionHeader.Render(" INDICES") + "\n")
+	sb.WriteString(StyleSubSectionHeader.Render(" ENDEKSLER") + "\n")
 	if errMsg, ok := m.errors["stocks"]; ok {
 		sb.WriteString(StyleError.Render("⚠ "+errMsg) + "\n")
 	} else if len(m.stockIndices) == 0 {
-		sb.WriteString(StyleMuted.Render("  "+m.spinner.View()+" fetching...") + "\n")
+		sb.WriteString(StyleMuted.Render("  "+m.spinner.View()+" fetch ediliyor...") + "\n")
 	} else {
 		nameW := w - 14
 		if nameW < 6 {
@@ -931,11 +931,11 @@ func (m Model) renderCryptoPanel(w, h int) string {
 	sb.WriteString("\n")
 
 	// ── Commodities ───────────────────────────────────────────────────────────
-	sb.WriteString(StyleSubSectionHeader.Render(" COMMODITIES") + "\n")
+	sb.WriteString(StyleSubSectionHeader.Render(" EMTİALAR") + "\n")
 	if errMsg, ok := m.errors["commodities"]; ok {
 		sb.WriteString(StyleError.Render("⚠ "+errMsg) + "\n")
 	} else if len(m.commodities) == 0 {
-		sb.WriteString(StyleMuted.Render("  "+m.spinner.View()+" fetching...") + "\n")
+		sb.WriteString(StyleMuted.Render("  "+m.spinner.View()+" fetch ediliyor...") + "\n")
 	} else {
 		nameW := w - 22
 		if nameW < 6 {
@@ -972,7 +972,7 @@ func (m Model) renderPolyPanel(w, h int) string {
 		return StyleError.Render("⚠ " + errMsg)
 	}
 	if len(m.polyMarkets) == 0 {
-		return m.spinner.View() + " fetching markets..."
+		return m.spinner.View() + " piyasalar fetch ediliyor..."
 	}
 
 	// Title column gets most space; reserve room for pct (7) + ends (6) + spacing (3)
@@ -981,7 +981,7 @@ func (m Model) renderPolyPanel(w, h int) string {
 		titleW = 10
 	}
 
-	hdr := fmt.Sprintf("%-*s %6s  %5s", titleW, "QUESTION", "YES%", "ENDS")
+	hdr := fmt.Sprintf("%-*s %6s  %5s", titleW, "SORU", "EVET%", "BİTİŞ")
 	sb.WriteString(StyleTableHeader.Render(hdr) + "\n")
 	sb.WriteString(StyleDivider.Render(strings.Repeat("─", minInt(w-1, 70))) + "\n")
 
@@ -1026,13 +1026,13 @@ func (m Model) renderNewsContent() (string, int) {
 	var sb strings.Builder
 
 	if errMsg, ok := m.errors["global"]; ok {
-		sb.WriteString(StyleError.Render("⚠ Error: "+errMsg) + "\n\n")
+		sb.WriteString(StyleError.Render("⚠ Hata: "+errMsg) + "\n\n")
 	}
 	if len(m.globalNews) == 0 {
 		if m.loading["global"] {
-			return "  " + m.spinner.View() + " Fetching global news...", 0
+			return "  " + m.spinner.View() + " Küresel haberler fetch ediliyor...", 0
 		}
-		return "  No news loaded. Press r to refresh.", 0
+		return "  Haber yüklenmedi. Yenilemek için r tuşuna basın.", 0
 	}
 
 	// ── Top header: country risk panel spanning full width ────────────────
@@ -1041,7 +1041,7 @@ func (m Model) renderNewsContent() (string, int) {
 	header, countryRiskLines := m.renderCountryRiskPanel(innerW)
 	divider := StyleDivider.Render(strings.Repeat("─", innerW))
 	sectionHdr := StyleSectionHeader.Render(
-		fmt.Sprintf(" ARTICLES  (%d)  ·  j/k navigate  ·  enter to open in browser", len(m.globalNews)))
+		fmt.Sprintf(" MAKALELER  (%d)  ·  j/k gezin  ·  tarayıcıda açmak için enter", len(m.globalNews)))
 
 	// Header lines = country risk panel lines + divider + section header + blank lines
 	// header + "\n" + divider + "\n\n" + sectionHdr + "\n\n"
@@ -1071,8 +1071,8 @@ func (m Model) renderNewsContent() (string, int) {
 
 		// Truncate title to fit exactly one line
 		titleLine := item.Title
-		if len(titleLine) > titleW {
-			runes := []rune(titleLine)
+		runes := []rune(titleLine)
+		if len(runes) > titleW {
 			titleLine = string(runes[:titleW-1]) + "…"
 		}
 		urlIndicator := ""
@@ -1098,14 +1098,14 @@ func (m Model) renderNewsContent() (string, int) {
 
 func (m Model) renderCountryRiskPanel(w int) (string, int) {
 	var sb strings.Builder
-	sb.WriteString(StyleBriefTitle.Render("🌡  COUNTRY RISK INDEX") + "\n")
+	sb.WriteString(StyleBriefTitle.Render("🌡  ÜLKE RİSK ENDEKSİ") + "\n")
 	sb.WriteString(StyleDivider.Render(strings.Repeat("─", minInt(w, 120))) + "\n")
 
 	if m.brief == nil || len(m.brief.CountryRisks) == 0 {
 		if m.loading["brief"] {
-			sb.WriteString("  " + m.spinner.View() + " Computing risks...\n")
+			sb.WriteString("  " + m.spinner.View() + " Riskler hesaplanıyor...\n")
 		} else {
-			sb.WriteString(StyleMuted.Render("  Press [b] to generate risk scores.") + "\n")
+			sb.WriteString(StyleMuted.Render("  Risk puanlarını oluşturmak için [b] tuşuna basın.") + "\n")
 		}
 		return sb.String(), strings.Count(sb.String(), "\n")
 	}
@@ -1232,32 +1232,32 @@ func (m Model) renderCountryRiskPanel(w int) (string, int) {
 func (m Model) renderLocalBriefPanel(w int) string {
 	var sb strings.Builder
 
-	sb.WriteString(StyleSectionHeader.Render(" LOCAL BRIEF") + "\n\n")
+	sb.WriteString(StyleSectionHeader.Render(" YEREL ÖZET") + "\n\n")
 
 	if m.cfg.LLMAPIKey == "" {
-		sb.WriteString(StyleWarning.Render("⚠  No LLM_API_KEY set.\n"))
-		sb.WriteString(StyleMuted.Render("Add key to ~/.config/watchtower/config.yaml\n"))
-		sb.WriteString(StyleMuted.Render("Press [i] after adding key."))
+		sb.WriteString(StyleWarning.Render("⚠  LLM_API_KEY ayarlanmamış.\n"))
+		sb.WriteString(StyleMuted.Render("Anahtarı ekleyin ~/.config/watchtower/config.yaml\n"))
+		sb.WriteString(StyleMuted.Render("Anahtarı ekledikten sonra [i] tuşuna basın."))
 		return sb.String()
 	}
 
 	if m.loading["localBrief"] {
-		sb.WriteString(m.spinner.View() + " Generating local brief...\n\n")
-		sb.WriteString(StyleMuted.Render("Calling " + m.cfg.LLMProvider + "..."))
+		sb.WriteString(m.spinner.View() + " Yerel özet oluşturuluyor...\n\n")
+		sb.WriteString(StyleMuted.Render(m.cfg.LLMProvider + " çağrılıyor..."))
 		return sb.String()
 	}
 
 	if errMsg, ok := m.errors["localBrief"]; ok {
 		sb.WriteString(StyleError.Render("⚠ "+errMsg) + "\n\n")
-		sb.WriteString(StyleMuted.Render("Press [i] to retry."))
+		sb.WriteString(StyleMuted.Render("Tekrar denemek için [i] tuşuna basın."))
 		return sb.String()
 	}
 
 	if m.localBrief == nil {
 		if len(m.localNews) == 0 && m.weatherCond == nil {
-			sb.WriteString(StyleMuted.Render("Waiting for news and weather to load..."))
+			sb.WriteString(StyleMuted.Render("Haberler ve hava durumu yükleniyor..."))
 		} else {
-			sb.WriteString(StyleMuted.Render("Press [i] to generate local brief."))
+			sb.WriteString(StyleMuted.Render("Yerel özeti oluşturmak için [i] tuşuna basın."))
 		}
 		return sb.String()
 	}
@@ -1267,9 +1267,9 @@ func (m Model) renderLocalBriefPanel(w int) string {
 	if time.Since(b.GeneratedAt) > time.Minute {
 		mins := int(time.Since(b.GeneratedAt).Minutes())
 		if mins >= 60 {
-			cacheAge = fmt.Sprintf("  (cached %dh%dm ago)", mins/60, mins%60)
+			cacheAge = fmt.Sprintf("  (önbellek %dh%dm önce)", mins/60, mins%60)
 		} else {
-			cacheAge = fmt.Sprintf("  (cached %dm ago)", mins)
+			cacheAge = fmt.Sprintf("  (önbellek %dm önce)", mins)
 		}
 	}
 	sb.WriteString(StyleBriefMeta.Render(b.GeneratedAt.Format("15:04")+"  "+b.Model+cacheAge) + "\n\n")
@@ -1289,16 +1289,16 @@ func (m Model) renderLocalContent() (string, int) {
 	weatherBlock := ""
 	if m.weatherCond != nil {
 		wc := m.weatherCond
-		weatherBlock += StyleSectionHeader.Render(" WEATHER  "+wc.City) + "\n\n"
-		weatherBlock += fmt.Sprintf("  %s  %s  %s  (feels like %s)\n",
+		weatherBlock += StyleSectionHeader.Render(" HAVA DURUMU  "+wc.City) + "\n\n"
+		weatherBlock += fmt.Sprintf("  %s  %s  %s  (hissedilen %s)\n",
 			wc.Icon, wc.Description, m.formatTemp(wc.TempC), m.formatTemp(wc.FeelsLikeC))
-		weatherBlock += fmt.Sprintf("  💧 Humidity: %d%%   💨 Wind: %.0f km/h %s   👁 Visibility: %.0f km   ☀ UV: %.0f\n\n",
+		weatherBlock += fmt.Sprintf("  💧 Nem: %d%%   💨 Rüzgar: %.0f km/h %s   👁 Görüş: %.0f km   ☀ UV: %.0f\n\n",
 			wc.Humidity, wc.WindSpeedKmh,
 			weather.WindDirectionStr(wc.WindDirection),
 			wc.Visibility/1000, wc.UVIndex)
 		if len(m.forecast) > 0 {
 			weatherBlock += StyleTableHeader.Render(
-				fmt.Sprintf("  %-12s %-16s %8s %8s %10s", "DATE", "CONDITION", "MAX", "MIN", "RAIN")) + "\n"
+				fmt.Sprintf("  %-12s %-16s %8s %8s %10s", "TARİH", "DURUM", "MAX", "MIN", "YAĞIŞ")) + "\n"
 			weatherBlock += StyleDivider.Render(strings.Repeat("─", 60)) + "\n"
 			for _, f := range m.forecast {
 				weatherBlock += fmt.Sprintf("  %-12s %s %-12s %6s %6s %7.1fmm\n",
@@ -1308,9 +1308,9 @@ func (m Model) renderLocalContent() (string, int) {
 			weatherBlock += "\n"
 		}
 	} else if _, ok := m.errors["weather"]; ok {
-		weatherBlock += StyleError.Render("⚠ Weather error") + "\n"
+		weatherBlock += StyleError.Render("⚠ Hava durumu hatası") + "\n"
 	} else {
-		weatherBlock += "  " + m.spinner.View() + " Fetching weather...\n"
+		weatherBlock += "  " + m.spinner.View() + " Hava durumu fetch ediliyor...\n"
 	}
 
 	// Count header lines from actual rendered content
@@ -1330,7 +1330,7 @@ func (m Model) renderLocalContent() (string, int) {
 	sb.WriteString("\n")
 	sb.WriteString(localBriefBlock)
 	sb.WriteString("\n")
-	localHdr := StyleSectionHeader.Render(" LOCAL NEWS  " + m.cfg.Location.City)
+	localHdr := StyleSectionHeader.Render(" YEREL HABERLER  " + m.cfg.Location.City)
 	sb.WriteString(localHdr + "\n\n")
 	hdrLines += strings.Count(localHdr+"\n\n", "\n")
 
@@ -1338,10 +1338,10 @@ func (m Model) renderLocalContent() (string, int) {
 		sb.WriteString(StyleError.Render("⚠ "+errMsg) + "\n")
 		hdrLines += strings.Count(StyleError.Render("⚠ "+errMsg)+"\n", "\n")
 	} else if len(m.localNews) == 0 {
-		sb.WriteString("  No local news loaded. Press r to refresh.\n")
-		hdrLines += strings.Count("  No local news loaded. Press r to refresh.\n", "\n")
+		sb.WriteString("  Yerel haber yüklenmedi. Yenilemek için r tuşuna basın.\n")
+		hdrLines += strings.Count("  Yerel haber yüklenmedi. Yenilemek için r tuşuna basın.\n", "\n")
 	} else {
-		sectionHdr := fmt.Sprintf(" ARTICLES  (%d)  ·  j/k navigate  ·  enter to open in browser", len(m.localNews))
+		sectionHdr := fmt.Sprintf(" MAKALELER  (%d)  ·  j/k gezin  ·  tarayıcıda açmak için enter", len(m.localNews))
 		sb.WriteString(StyleSectionHeader.Render(sectionHdr) + "\n\n")
 		hdrLines += strings.Count(StyleSectionHeader.Render(sectionHdr)+"\n\n", "\n")
 
