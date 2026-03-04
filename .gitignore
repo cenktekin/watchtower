@@ -36,3 +36,9 @@ watchtower
 AGENTS.md
 # Added by goreleaser init:
 dist/
+
+# Config files with API keys
+*.yaml
+*.yml
+config.yaml
+.config/
