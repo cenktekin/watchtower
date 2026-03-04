@@ -2,6 +2,8 @@
 
 Temiz, minimal, terminal tabanlı küresel istihbarat gösterge paneli.
 
+> **📢 Bu Fork'ta Yeni:** OpenRouter ve Ollama desteği eklendi! API key gerektirmeyen yerel LLM modelleri artık kullanabilirsiniz.
+
 ![wt](https://i.imgur.com/p4BiORi.gif)
 
 ## Neden Watchtower?
@@ -9,6 +11,31 @@ Temiz, minimal, terminal tabanlı küresel istihbarat gösterge paneli.
 İnternet bilgiyi erişilebilir kıldı—ancak gürültüde yolunu bulmak bunaltıcı hale geldi. WorldMonitor gibi OSINT araçları güçlüdür, ancak sadece veri noktasına ihtiyaç duyan istihbarat profesyonelleri için tasarlanmıştır. Veri selinde boğulmadan bilgi sahibi olmak isteyen ortalama kullanıcı için bir boşluk var.
 
 **Watchtower bu boşluğu dolduruyor.** Tamamen terminalinizde yaşar—tarayıcı sekmesi yok, ağır web uygulamaları yok. Hafif, hızlıdır ve yalnızca tek bir API anahtarı gerektirir (ve bu da sadece AI özet özelliği için isteğe bağlıdır). Terminalinizi açın ve dünyada neler olduğunu görün.
+
+## ✨ Bu Fork'taki Yeni Özellikler
+
+### 🆕 Orijinal Repoda OLMAYAN Özellikler:
+
+| Özellik | Açıklama |
+|---------|----------|
+| **🔌 OpenRouter** | Ücretsiz LLM modelleri (meta-llama/llama-3-8b-instruct:free) |
+| **🏠 Ollama** | Yerel, offline LLM çalıştırma (tamamen ücretsiz, API key gerekmez) |
+| **🔓 API Key Opsiyonel** | Ollama ve Local sağlayıcılar için API key **gerekmez** |
+| **⏱️ Timeout Artırıldı** | 30s → 120s (uzun AI yanıtları için daha güvenilir) |
+| **🇹🇷 Türkçe Arayüz** | Tam Türkçe TUI, menüler ve AI prompt'ları |
+
+### Desteklenen LLM Sağlayıcıları:
+
+| Sağlayıcı | API Key | Ücretsiz Katman | Notlar |
+|-----------|---------|-----------------|--------|
+| **Groq** | ✅ Gerekli | ✅ Var | Hızlı, ücretsiz katman cömert |
+| **OpenRouter** | ✅ Gerekli | ✅ Var | Ücretsiz modeller mevcut |
+| **Ollama** | ❌ Gerekmez | ✅ Tamamen ücretsiz | Yerel model, offline çalışır |
+| **Local** | ❌ Gerekmez | ✅ Tamamen ücretsiz | Yerel model |
+| OpenAI | ✅ Gerekli | ❌ Yok | - |
+| Deepseek | ✅ Gerekli | ✅ Var | - |
+| Gemini | ✅ Gerekli | ✅ Var | - |
+| Anthropic | ✅ Gerekli | ❌ Yok | - |
 
 ## Özellikler
 
@@ -81,13 +108,40 @@ go install github.com/lajosdeme/watchtower@latest
 
 İlk çalıştırmada, Watchtower birkaç şeyi yapılandırmanızı isteyecek:
 
-1. **LLM sağlayıcı seçin** — Groq (ücretsiz), OpenAI, Deepseek, Gemini, Anthropic veya yerel model seçin
-2. **API anahtarınızı yapıştırın** — Yerel olarak `~/.config/watchtower/config.yaml` dosyasında saklanır, cihazınızdan asla çıkmaz
+1. **LLM sağlayıcı seçin** — Groq, OpenRouter, Ollama, OpenAI, Deepseek, Gemini, Anthropic veya yerel model
+   - 💡 **Öneri:** Ücretsiz kullanım için **Groq** veya **OpenRouter**
+   - 🏠 **Tamamen ücretsiz:** **Ollama** veya **Local** (API key gerekmez!)
+2. **API anahtarınızı yapıştırın** — Sadece cloud sağlayıcılar için gerekli
+   - Ollama/Local seçtiyseniz bu adım **atlanır**
+   - API anahtarınız `~/.config/watchtower/config.yaml` dosyasında saklanır, cihazınızdan asla çıkmaz
 3. **Konumunuzu belirtin** — Yerel hava durumu ve haberler için şehrinizi ve koordinatlarınızı girin
 
 ![setup](https://i.imgur.com/7L4soxv.gif)
 
 Bu kadar! Uygulama ayarlarınızı kaydeder ve kullanmaya hazırsınız.
+
+### 🆓 Ücretsiz AI Kullanımı
+
+**Tamamen ücretsiz kullanmak için:**
+
+1. **Ollama** (Önerilen):
+   ```bash
+   # Ollama'yı kurun
+   curl -fsSL https://ollama.com/install.sh | sh
+   
+   # Model indirin
+   ollama pull llama3
+   
+   # Watchtower'da "ollama" seçin - API key gerekmez!
+   ```
+
+2. **Groq** (Ücretsiz katman):
+   - console.groq.com adresinden ücretsiz API key alın
+   - Hızlı ve cömert ücretsiz limitler
+
+3. **OpenRouter** (Ücretsiz modeller):
+   - openrouter.ai adresinden API key alın
+   - Meta-Llama-3-8b-Instruct:free gibi ücretsiz modeller
 
 ## Tuş Atamaları
 
@@ -113,7 +167,8 @@ Bu kadar! Uygulama ayarlarınızı kaydeder ve kullanmaya hazırsınız.
 | Polymarket | Tahmin piyasaları | Yok (public API) |
 | Yahoo Finance | Hisseler ve emtialar | Yok |
 | Open-Meteo | Hava durumu | Yok |
-| Groq / OpenAI / Anthropic / Deepseek / Gemini / Local | AI özet | Gerekli (ücretsiz katmanlar mevcut) |
+| **Groq / OpenRouter / Ollama** | AI özet | **Yok** (ücretsiz) |
+| OpenAI / Anthropic / Deepseek / Gemini | AI özet | Gerekli |
 
 ## Teknoloji Yığını
 
@@ -149,4 +204,11 @@ MIT Lisansı — detaylar için [LICENSE](LICENSE) dosyasına bakın.
 
 ## Yazar
 
-[Lajos Deme](https://github.com/lajosdeme)
+- Orijinal: [Lajos Deme](https://github.com/lajosdeme)
+- Bu fork: [cenktekin](https://github.com/cenktekin)
+
+## 🔗 Bağlantılar
+
+- **Orijinal Repo:** https://github.com/lajosdeme/watchtower
+- **Bu Fork:** https://github.com/cenktekin/watchtower
+- **Değişiklikler:** [CHANGES.md](CHANGES.md) dosyasında detaylı döküm
