@@ -1,8 +1,54 @@
 # Watchtower Türkçe Çeviri Projesi
 
-Bu fork, Watchtower uygulamasının **tam Türkçe çevirisini** içerir.
+Bu fork, Watchtower uygulamasının **tam Türkçe çevirisini** ve **önemli özellik iyileştirmelerini** içerir.
 
 ## 🆕 Orijinal Repodan Farklar
+
+### ✨ Yeni Özellikler
+
+#### 1. OpenRouter Desteği
+- **Orijinal repo'da YOK**
+- OpenRouter API entegrasyonu eklendi
+- Ücretsiz LLM modelleri kullanma imkanı
+- Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+- Varsayılan model: `meta-llama/llama-3-8b-instruct:free`
+
+#### 2. Ollama Yerel LLM Desteği
+- **Orijinal repo'da YOK**
+- Ollama yerel model desteği eklendi
+- Tamamen offline, gizlilik odaklı kullanım
+- Endpoint: `http://localhost:11434/v1/chat/completions`
+- Varsayılan model: `llama3`
+
+#### 3. API Key Zorunluluğu Kaldırıldı
+- **Orijinal:** Tüm sağlayıcılar için API key zorunlu
+- **Sizde:** `ollama` ve `local` sağlayıcıları için API key **gerekmez**
+- Kurulum sihirbazı bu sağlayıcıları seçtiğinizde API key adımı otomatik atlanır
+- Auth header kontrolü eklendi (`if cfg.AuthHeader() != ""`)
+
+#### 4. HTTP Timeout Artırıldı
+- **Orijinal:** 30 saniye
+- **Sizde:** 120 saniye
+- Uzun AI yanıtları için daha güvenilir
+
+### 🔧 İyileştirmeler
+
+#### Kurulum Sihirbazı
+- Sağlayıcı tipine göre akıllı akış
+- API key gerektirmeyen sağlayıcılar için otomatik atlama
+- Kullanıcı dostu etiketler:
+  - `(anahtar gerekmez)` - ollama, local
+  - `(ücretsiz katman mevcut)` - groq, openrouter
+
+#### AI Prompt'ları
+- Global brief prompt'u tamamen yenilendi:
+  - Türkçe yanıt zorunluluğu
+  - Risk çapaları (100/75/50/25/0)
+  - Somut olay odaklı ("bomba, grev, darbe" vb.)
+  - Diplomatik dil yasak
+  - Aksiyon odaklı ülke riskleri
+
+### 🌍 Türkçe Çeviri
 
 ### Eklenen Dosyalar
 - `README.tr.md` - Türkçe README dosyası
